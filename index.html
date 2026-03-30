@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>雲聲商品頁設計邏輯與設計檢查清單</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0d0f;
+    --surface: #141416;
+    --surface2: #1c1c1f;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #e8e6e0;
+    --muted: #7a786f;
+    --accent: #d4f564;
+    --accent2: #b8e040;
+    --blue: #5b9cf6;
+    --teal: #3ecfb0;
+    --coral: #f06a50;
+    --amber: #f5c842;
+    --purple: #a78bfa;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Sora', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+    background-size: 48px 48px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 32px 80px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ── Header ── */
+  header {
+    padding: 64px 0 48px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 48px;
+  }
+
+  .brand-tag {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px; letter-spacing: 0.12em;
+    color: var(--accent);
+    background: rgba(212,245,100,0.08);
+    border: 1px solid rgba(212,245,100,0.2);
+    border-radius: 4px;
+    padding: 5px 12px;
+    margin-bottom: 24px;
+  }
+
+  .brand-tag::before {
+    content: '▸';
+    font-size: 10px;
+  }
+
+  h1 {
+    font-size: clamp(28px, 5vw, 44px);
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+    margin-bottom: 16px;
+  }
+
+  h1 span { color: var(--accent); }
+
+  .subtitle {
+    font-size: 15px;
+    color: var(--muted);
+    line-height: 1.7;
+    max-width: 560px;
+  }
+
+  .meta-row {
+    display: flex; gap: 24px; margin-top: 24px; flex-wrap: wrap;
+  }
+
+  .meta-item {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px; color: var(--muted);
+    display: flex; align-items: center; gap: 6px;
+  }
+
+  .meta-item strong { color: var(--text); }
+
+  /* ── Progress ── */
+  .progress-card {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-bottom: 40px;
+    display: flex; align-items: center; gap: 20px;
+    flex-wrap: wrap;
+  }
+
+  .progress-ring-wrap { position: relative; width: 56px; height: 56px; flex-shrink: 0; }
+  .progress-ring-wrap svg { transform: rotate(-90deg); }
+  circle.track { fill: none; stroke: rgba(255,255,255,0.07); stroke-width: 4; }
+  circle.fill { fill: none; stroke: var(--accent); stroke-width: 4; stroke-linecap: round; transition: stroke-dashoffset 0.4s ease; }
+  .ring-text {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px; font-weight: 500;
+    color: var(--text);
+  }
+
+  .progress-info { flex: 1; min-width: 160px; }
+  .progress-info h3 { font-size: 14px; font-weight: 500; margin-bottom: 4px; }
+  .progress-info p { font-size: 12px; color: var(--muted); }
+
+  .progress-bar-wrap { flex: 2; min-width: 200px; }
+  .progress-bar-track {
+    height: 6px; border-radius: 3px;
+    background: rgba(255,255,255,0.07);
+    overflow: hidden; margin-bottom: 6px;
+  }
+  .progress-bar-fill {
+    height: 100%; border-radius: 3px;
+    background: var(--accent);
+    transition: width 0.4s ease;
+  }
+  .progress-bar-label {
+    display: flex; justify-content: space-between;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px; color: var(--muted);
+  }
+
+  .reset-btn {
+    background: none;
+    border: 1px solid var(--border2);
+    color: var(--muted);
+    font-family: 'Sora', sans-serif;
+    font-size: 12px;
+    padding: 6px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .reset-btn:hover { border-color: var(--coral); color: var(--coral); }
+
+  /* ── Logic intro ── */
+  .logic-section {
+    margin-bottom: 48px;
+  }
+
+  .section-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px; letter-spacing: 0.1em;
+    color: var(--muted);
+    margin-bottom: 20px;
+    display: flex; align-items: center; gap: 10px;
+  }
+
+  .section-label::after {
+    content: '';
+    flex: 1; height: 1px;
+    background: var(--border);
+  }
+
+  .logic-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 12px;
+  }
+
+  .logic-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 20px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+
+  .logic-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    border-radius: 10px 10px 0 0;
+  }
+
+  .logic-card:nth-child(1)::before { background: var(--accent); }
+  .logic-card:nth-child(2)::before { background: var(--teal); }
+  .logic-card:nth-child(3)::before { background: var(--blue); }
+  .logic-card:nth-child(4)::before { background: var(--amber); }
+  .logic-card:nth-child(5)::before { background: var(--coral); }
+
+  .logic-card:hover { border-color: var(--border2); }
+
+  .logic-icon {
+    font-size: 10px;
+    font-family: 'DM Mono', monospace;
+    color: var(--muted);
+    margin-bottom: 10px;
+    letter-spacing: 0.08em;
+  }
+
+  .logic-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 8px;
+    line-height: 1.3;
+  }
+
+  .logic-desc {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.65;
+  }
+
+  /* ── Checklist ── */
+  .checklist-area { margin-top: 8px; }
+
+  .cl-section {
+    margin-bottom: 24px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+
+  .cl-section:has(.item-row.done):not(:has(.item-row:not(.done))) {
+    border-color: rgba(212,245,100,0.2);
+  }
+
+  .cl-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 20px;
+    background: var(--surface);
+    cursor: pointer;
+    user-select: none;
+    gap: 12px;
+  }
+
+  .cl-header:hover { background: var(--surface2); }
+
+  .cl-header-left {
+    display: flex; align-items: center; gap: 12px;
+  }
+
+  .cl-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 2px 7px;
+    letter-spacing: 0.06em;
+  }
+
+  .cl-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .cl-badge {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 2px 10px;
+    white-space: nowrap;
+  }
+
+  .cl-badge.done { color: var(--accent); border-color: rgba(212,245,100,0.25); background: rgba(212,245,100,0.05); }
+
+  .cl-chevron {
+    color: var(--muted);
+    font-size: 12px;
+    transition: transform 0.25s;
+  }
+
+  .cl-section.collapsed .cl-chevron { transform: rotate(-90deg); }
+
+  .cl-body {
+    padding: 0 0 8px;
+    background: var(--bg);
+    border-top: 1px solid var(--border);
+  }
+
+  .cl-section.collapsed .cl-body { display: none; }
+
+  .item-row {
+    display: flex; align-items: flex-start; gap: 14px;
+    padding: 11px 20px;
+    cursor: pointer;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+    transition: background 0.15s;
+    user-select: none;
+  }
+
+  .item-row:last-child { border-bottom: none; }
+  .item-row:hover { background: rgba(255,255,255,0.025); }
+
+  .cb {
+    width: 18px; height: 18px; border-radius: 5px; flex-shrink: 0;
+    border: 1.5px solid rgba(255,255,255,0.18);
+    margin-top: 1px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+    background: transparent;
+    font-size: 10px; color: var(--bg); font-weight: 600;
+  }
+
+  .item-row.done .cb {
+    background: var(--accent); border-color: var(--accent);
+  }
+
+  .item-row.done .cb::before { content: '✓'; }
+
+  .item-content { flex: 1; }
+
+  .item-text {
+    font-size: 13px; line-height: 1.55;
+    color: var(--text); transition: color 0.2s;
+  }
+
+  .item-row.done .item-text {
+    text-decoration: line-through;
+    color: rgba(255,255,255,0.25);
+  }
+
+  .item-note {
+    font-size: 11px; color: var(--muted);
+    margin-top: 3px;
+    font-family: 'DM Mono', monospace;
+    line-height: 1.5;
+  }
+
+  .item-row.done .item-note { color: rgba(122,120,111,0.4); }
+
+  /* ── Color accents per section ── */
+  .cl-section[data-color="accent"] .cl-header { border-left: 3px solid var(--accent); }
+  .cl-section[data-color="teal"] .cl-header { border-left: 3px solid var(--teal); }
+  .cl-section[data-color="blue"] .cl-header { border-left: 3px solid var(--blue); }
+  .cl-section[data-color="amber"] .cl-header { border-left: 3px solid var(--amber); }
+  .cl-section[data-color="coral"] .cl-header { border-left: 3px solid var(--coral); }
+  .cl-section[data-color="purple"] .cl-header { border-left: 3px solid var(--purple); }
+
+  /* ── Footer ── */
+  footer {
+    margin-top: 64px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 12px;
+  }
+
+  footer p {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  footer a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+
+  /* Anim */
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .cl-section { animation: fadeIn 0.3s ease both; }
+  .cl-section:nth-child(1) { animation-delay: 0.05s; }
+  .cl-section:nth-child(2) { animation-delay: 0.10s; }
+  .cl-section:nth-child(3) { animation-delay: 0.15s; }
+  .cl-section:nth-child(4) { animation-delay: 0.20s; }
+  .cl-section:nth-child(5) { animation-delay: 0.25s; }
+  .cl-section:nth-child(6) { animation-delay: 0.30s; }
+  .cl-section:nth-child(7) { animation-delay: 0.35s; }
+  .cl-section:nth-child(8) { animation-delay: 0.40s; }
+  .cl-section:nth-child(9) { animation-delay: 0.45s; }
+
+  @media (max-width: 600px) {
+    .container { padding: 0 18px 60px; }
+    header { padding: 40px 0 32px; }
+    .logic-grid { grid-template-columns: 1fr; }
+    .progress-card { gap: 14px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Header -->
+  <header>
+    <div class="brand-tag">CLOUDVOCAL / 雲聲科技</div>
+    <h1>商品頁設計邏輯<br>與<span> 設計檢查清單</span></h1>
+    <p class="subtitle">根據 EverSync SP-10 頁面整理，共 9 大區塊、40+ 檢查項目。供開發與設計團隊協作使用，確保每一個商品頁維持一致的設計邏輯與轉換效能。</p>
+    <div class="meta-row">
+      <div class="meta-item">REFERENCE <strong>EverSync SP-10</strong></div>
+      <div class="meta-item">SECTIONS <strong>9</strong></div>
+      <div class="meta-item">ITEMS <strong>40</strong></div>
+    </div>
+  </header>
+
+  <!-- Progress -->
+  <div class="progress-card">
+    <div class="progress-ring-wrap">
+      <svg width="56" height="56" viewBox="0 0 56 56">
+        <circle class="track" cx="28" cy="28" r="22"/>
+        <circle class="fill" id="ring-circle" cx="28" cy="28" r="22"
+          stroke-dasharray="138.2" stroke-dashoffset="138.2"/>
+      </svg>
+      <div class="ring-text" id="ring-pct">0%</div>
+    </div>
+    <div class="progress-info">
+      <h3>檢查進度</h3>
+      <p id="prog-count">尚未開始</p>
+    </div>
+    <div class="progress-bar-wrap">
+      <div class="progress-bar-track">
+        <div class="progress-bar-fill" id="prog-bar" style="width:0%"></div>
+      </div>
+      <div class="progress-bar-label">
+        <span>0%</span>
+        <span id="prog-label2">0 / 0 完成</span>
+      </div>
+    </div>
+    <button class="reset-btn" onclick="resetAll()">↺ 全部重設</button>
+  </div>
+
+  <!-- Logic intro -->
+  <div class="logic-section">
+    <div class="section-label">PAGE DESIGN LOGIC — 頁面設計邏輯</div>
+    <div class="logic-grid">
+      <div class="logic-card">
+        <div class="logic-icon">ZONE 01 — TOP</div>
+        <div class="logic-title">購買決策區（最上方）</div>
+        <div class="logic-desc">集中所有促使下單的資訊——價格、促銷碼、信任保障、多角度圖片，讓訪客不需捲動就能完成決策。</div>
+      </div>
+      <div class="logic-card">
+        <div class="logic-icon">ZONE 02 — BELOW FOLD</div>
+        <div class="logic-title">快速摘要（Feature / Contents）</div>
+        <div class="logic-desc">緊接其後，用條列格式讓訪客秒懂「這是什麼、盒子裡有什麼」，並提供說明書 PDF 下載，降低售後疑問。</div>
+      </div>
+      <div class="logic-card">
+        <div class="logic-icon">ZONE 03 — NAV</div>
+        <div class="logic-title">錨點導覽列</div>
+        <div class="logic-desc">充當目錄，方便技術型買家直接跳到 Specs，不干擾一般用戶的閱讀動線。</div>
+      </div>
+      <div class="logic-card">
+        <div class="logic-icon">ZONE 04–06 — MAIN BODY</div>
+        <div class="logic-title">Overview → Features → Specs</div>
+        <div class="logic-desc">遵循「情感說服 → 功能論述 → 技術驗證」的遞進邏輯，先讓人想要，再讓人相信，最後提供數據支撐。</div>
+      </div>
+      <div class="logic-card">
+        <div class="logic-icon">ZONE 07–09 — BOTTOM</div>
+        <div class="logic-title">技術支援 + 評價 + 相關商品</div>
+        <div class="logic-desc">放在頁尾，服務「已被說服但還有疑慮」的用戶，同時帶動交叉銷售。</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Checklist -->
+  <div class="section-label" style="margin-bottom:20px">DESIGN CHECKLIST — 設計檢查清單</div>
+  <div class="checklist-area" id="checklist"></div>
+
+  <footer>
+    <p>CLOUDVOCAL / 雲聲科技 — 商品頁設計規範 v1.0</p>
+    <p>Source: <a href="https://cloudvocal.com/products/eversync-sp-10-wireless-stomp-pedal" target="_blank">SP-10 Product Page ↗</a></p>
+  </footer>
+
+</div>
+
+<script>
+const SECTIONS = [
+  {
+    num:"①", title:"商品主區塊（購買決策區）", color:"accent",
+    items:[
+      {t:"商品名稱完整標示（品牌系列 + 型號 + 品類）", n:"例：EverSync SP-10 Wireless Stomp Pedal"},
+      {t:"SKU 代碼清楚顯示"},
+      {t:"標準售價與促銷售價同時顯示"},
+      {t:"促銷活動提示（折扣碼、期間限定標語）", n:"例：Easter Sale Special + 折扣碼"},
+      {t:"Add to Cart 按鈕明顯可見"},
+      {t:"直購優惠說明（免運、保固、試用期）", n:"14天試用、2年保固、DHL全球配送"},
+      {t:"產品圖多張（至少包含：主視覺、情境、細節、多角度）"},
+      {t:"圖片可縮放（Zoom in 功能）"},
+    ]
+  },
+  {
+    num:"②", title:"快速功能摘要（Feature & Contents）", color:"teal",
+    items:[
+      {t:"Feature 區塊：條列 3–5 項核心賣點（粗體關鍵字 + 說明）"},
+      {t:"Contents 區塊：完整列出盒內附件清單"},
+      {t:"附件包含說明書下載連結（PDF）"},
+      {t:"Quick Start Guide 連結"},
+      {t:"付款方式圖示（信用卡 Logo、PayPal）"},
+      {t:"進口關稅免責聲明"},
+    ]
+  },
+  {
+    num:"③", title:"頁內錨點導覽列（Overview / Features / Specs）", color:"blue",
+    items:[
+      {t:"至少包含 3 個錨點：Overview、Features、Specs"},
+      {t:"錨點按鈕置中排列，視覺明確可點擊"},
+    ]
+  },
+  {
+    num:"④", title:"Overview 區塊", color:"amber",
+    items:[
+      {t:"包含產品定位標題（slogan 風格，1 行）", n:"例：Wireless Starts Now"},
+      {t:"1–2 段產品介紹文（說明應用場景與核心技術）"},
+      {t:"Artist Video / 實際使用影片縮圖（複數張）", n:"需標示影片標題與創作者名稱"},
+    ]
+  },
+  {
+    num:"⑤", title:"Features 區塊", color:"coral",
+    items:[
+      {t:"每項功能有 H3 小標題（動詞開頭的賣點句）", n:"例：Pedal-based Design. Effortless Signal Integration"},
+      {t:"搭配功能情境圖（靜態圖或 GIF 動圖）"},
+      {t:"功能說明文字 1–2 段（說明 Why，不只是 What）"},
+      {t:"若有相容配件，附配件對照表（表格形式，含型號、接頭類型、適用裝置）"},
+      {t:"技術細節補充說明（可折疊 Read More 或展開段落）", n:"例：支援麥克風類型、輸入優先級"},
+    ]
+  },
+  {
+    num:"⑥", title:"Specs 區塊", color:"purple",
+    items:[
+      {t:"System specs 總表（含無線傳輸、延遲、取樣率、動態範圍等）"},
+      {t:"依使用情境分欄（例：Low Latency vs Stable 模式）"},
+      {t:"各零件（Transmitter / Receiver）分別列出規格", n:"尺寸、重量、電源、I/O 接口、工作溫度"},
+    ]
+  },
+  {
+    num:"⑦", title:"技術支援區塊（Having Trouble?）", color:"teal",
+    items:[
+      {t:"「How to Set Up」連結或 YouTube 教學影片"},
+      {t:"FAQ 連結或展開區塊"},
+    ]
+  },
+  {
+    num:"⑧", title:"顧客評價與相關商品", color:"amber",
+    items:[
+      {t:"Customer Reviews 區塊（顯示評分數與撰寫評價連結）"},
+      {t:"Related Product 輪播（含商品圖、名稱、售價）", n:"通常為同系列或互補商品"},
+      {t:"Related Blog 連結（相關應用文章）"},
+    ]
+  },
+  {
+    num:"⑨", title:"全域一致性（每頁共同規範）", color:"blue",
+    items:[
+      {t:"導覽列結構一致（Logo、主選單、Account、Cart）"},
+      {t:"Footer 結構一致（Shop、Company、Social Media 分欄）"},
+      {t:"語言統一為英文（面向全球市場）"},
+      {t:"產品圖背景一致（白底或品牌情境背景）"},
+      {t:"所有段落標題使用 H2/H3 層級，避免跨層跳用"},
+      {t:"錨點 ID（#overview / #features / #specs）與導覽列對應正確"},
+    ]
+  },
+];
+
+let checked = {};
+
+function totalItems() {
+  return SECTIONS.reduce((s,sec) => s + sec.items.length, 0);
+}
+
+function countDone() {
+  return Object.values(checked).filter(Boolean).length;
+}
+
+function updateProgress() {
+  const total = totalItems();
+  const done = countDone();
+  const pct = total ? Math.round(done / total * 100) : 0;
+  const circum = 138.2;
+  const offset = circum - (circum * pct / 100);
+  document.getElementById('ring-circle').style.strokeDashoffset = offset;
+  document.getElementById('ring-pct').textContent = pct + '%';
+  document.getElementById('prog-count').textContent = done === 0 ? '尚未開始' : done === total ? '🎉 全部完成！' : `已完成 ${done} 項`;
+  document.getElementById('prog-bar').style.width = pct + '%';
+  document.querySelector('.progress-bar-label span').textContent = pct + '%';
+  document.getElementById('prog-label2').textContent = `${done} / ${total} 完成`;
+}
+
+function renderChecklist() {
+  const cl = document.getElementById('checklist');
+  cl.innerHTML = '';
+  SECTIONS.forEach((sec, si) => {
+    const secDone = sec.items.filter((_, ii) => checked[`${si}-${ii}`]).length;
+    const allDone = secDone === sec.items.length;
+
+    const div = document.createElement('div');
+    div.className = 'cl-section';
+    div.dataset.color = sec.color;
+
+    const header = document.createElement('div');
+    header.className = 'cl-header';
+    header.innerHTML = `
+      <div class="cl-header-left">
+        <span class="cl-num">${sec.num}</span>
+        <span class="cl-title">${sec.title}</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="cl-badge ${allDone?'done':''}">${secDone} / ${sec.items.length}</span>
+        <span class="cl-chevron">▾</span>
+      </div>`;
+    header.onclick = () => {
+      div.classList.toggle('collapsed');
+    };
+
+    const body = document.createElement('div');
+    body.className = 'cl-body';
+
+    sec.items.forEach((item, ii) => {
+      const key = `${si}-${ii}`;
+      const done = !!checked[key];
+      const row = document.createElement('div');
+      row.className = 'item-row' + (done ? ' done' : '');
+      row.innerHTML = `
+        <div class="cb"></div>
+        <div class="item-content">
+          <div class="item-text">${item.t}</div>
+          ${item.n ? `<div class="item-note">// ${item.n}</div>` : ''}
+        </div>`;
+      row.onclick = () => {
+        checked[key] = !checked[key];
+        updateProgress();
+        renderChecklist();
+      };
+      body.appendChild(row);
+    });
+
+    div.appendChild(header);
+    div.appendChild(body);
+    cl.appendChild(div);
+  });
+  updateProgress();
+}
+
+function resetAll() {
+  if (!confirm('確定要重設所有勾選項目嗎？')) return;
+  checked = {};
+  renderChecklist();
+}
+
+renderChecklist();
+</script>
+</body>
+</html>
